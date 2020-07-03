@@ -1,6 +1,7 @@
 
 import React, {Component} from 'react';
 import { POS_KEY } from '../constants';
+import AroundMarker from './AroundMarker';
 
 import {
     withScriptjs,
@@ -45,7 +46,7 @@ class NormalAroundMap extends Component {
                 onDragEnd={this.reloadMarker}
                 onZoomChanged={this.reloadMarker}
             >
-                {/*{this.props.posts.map((post) => <AroundMarker post={post} key={post.url} />)}*/}
+                {this.props.posts.map((post) => <AroundMarker post={post} key={post.url} />)}
             </GoogleMap>
         );
     }
