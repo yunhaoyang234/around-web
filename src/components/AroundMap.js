@@ -17,7 +17,7 @@ class NormalAroundMap extends Component {
     reloadMarker = () => {
         const center = this.getCenter();
         const radius = this.getRadius();
-        this.props.loadNearbyPosts(center, radius);
+        this.props.loadPostsByTopic(center, radius);
     }
 
     getCenter() {
@@ -41,7 +41,7 @@ class NormalAroundMap extends Component {
             <GoogleMap
                 ref={this.getMapRef}
                 defaultZoom={11}
-                defaultCenter={{ lat:122, lng: -31 }}
+                defaultCenter={{ lat:lat, lng: lon}}
                 onDragEnd={this.reloadMarker}
                 onZoomChanged={this.reloadMarker}
             >

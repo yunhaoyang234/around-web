@@ -1,5 +1,5 @@
 import React from 'react';
-import { Tabs, Spin, Row, Col } from 'antd';
+import { Tabs, Spin, Row, Col, Radio } from 'antd';
 import {
     GEO_OPTIONS,
     POS_KEY,
@@ -8,8 +8,10 @@ import {
     TOKEN_KEY,
     POST_TYPE_IMAGE,
     POST_TYPE_VIDEO,
-    POST_TYPE_UNKNOWN
-} from '../constants'
+    POST_TYPE_UNKNOWN,
+    TOPIC_AROUND,
+    TOPIC_FACE
+} from '../constants';
 
 import Gallery from './Gallery';
 import CreatePostButton from "./CreatePostButton";
@@ -52,11 +54,12 @@ class Home extends React.Component {
     }
 
 
-    loadNearbyPosts = () => {
-        const { lat, lon } = JSON.parse(localStorage.getItem(POS_KEY));
+    loadNearbyPosts = (center, radius) => {
+        const { lat, lon } = center ? center : JSON.parse(localStorage.getItem(POS_KEY));
+        const range = radius ? radius : 20000;
         const token = localStorage.getItem(TOKEN_KEY);
         this.setState({ isLoadingPosts: true, error: '' });
-        fetch(`${API_ROOT}/search?lat=${37}&lon=${-121}&range=20000`, {
+        return fetch(`${API_ROOT}/search?lat=${lat}&lon=${lon}&range=${range}`,{
             method: 'GET',
             headers: {
                 Authorization: `${AUTH_HEADER} ${token}`
@@ -128,12 +131,60 @@ class Home extends React.Component {
         }
     }
 
+    handleTopicChange = (e) => {
+        const topic = e.target.value;
+        this.setState({ topic });
+        if (topic === TOPIC_AROUND) {
+            this.loadNearbyPost();
+        } else {
+            this.loadFacesAroundTheWolrd();
+        }
+    }
+
+    loadFacesAroundTheWolrd = () => {
+        const token = localStorage.getItem(TOKEN_KEY);
+        this.setState({ isLoadingPosts: true, error: '' });
+        return fetch(`${API_ROOT}/cluster?term=face`, {
+            method: 'GET',
+            headers: {
+                Authorization: `${AUTH_HEADER} ${token}`,
+            }
+        })
+            .then((response) => {
+                if (response.ok) {
+                    return response.json();
+                }
+                throw new Error('Failed to load posts');
+            })
+            .then((data) => {
+                console.log(data);
+                this.setState({ posts: data ? data : [], isLoadingPosts: false });
+            })
+            .catch((e) => {
+                console.error(e);
+                this.setState({ isLoadingPosts: false , error: e.message });
+            });
+    }
+
+    loadPostsByTopic = (center, radius) => {
+        if (this.state.topic === TOPIC_AROUND) {
+            return this.loadNearbyPosts(center, radius);
+        } else {
+            return this.loadFacesAroundTheWolrd();
+        }
+    }
+
 
     render() {
         const operations = <CreatePostButton loadNearbyPosts={this.loadNearbyPosts}/>;
 
         return (
             <div className="home">
+                <Radio.Group onChange={this.handleTopicChange} value={this.state.topic}>
+                    <Radio value={TOPIC_AROUND}>Posts Around Me</Radio>
+                    <Radio value={TOPIC_FACE}>Faces Around The World</Radio>
+                </Radio.Group>
+
                 <Tabs tabBarExtraContent={operations} className="main-tabs">
                     <TabPane tab="Image Posts" key="1">
                         {this.renderPosts(POST_TYPE_IMAGE)}
@@ -148,9 +199,8 @@ class Home extends React.Component {
                             containerElement={<div style={{ height: `600px` }} />}
                             mapElement={<div style={{ height: `100%` }} />}
                             posts={this.state.posts}
-                            loadNearbyPosts={this.loadNearbyPosts}
+                            loadPostsByTopic={this.loadPostsByTopic}
                         />
-
                     </TabPane>
                 </Tabs>
             </div>
